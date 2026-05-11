@@ -64,7 +64,7 @@ with st.form("measurement_form", clear_on_submit=True):
                 updated_df = pd.concat([existing_data, new_data], ignore_index=True)
                 conn.update(worksheet="Sheet1", data=updated_df)
                 
-                st.success(f"Project for {cust_name} successfully saved to Google Sheets!")
+                st.success(f"Project for {cust_name} successfully saved!")
                 st.balloons()
             except Exception as e:
-                st.error(f"Error saving to Google Sheets: {e}")
+                st.error(f"Connection Error: Ensure your Google Sheet is set to 'Anyone with link can EDIT' and the tab is named 'Sheet1'. Details: {e}")
