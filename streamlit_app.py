@@ -3,14 +3,11 @@ from st_gsheets_connection import GSheetsConnection
 import pandas as pd
 from datetime import datetime
 
+# Page config for mobile
 st.set_page_config(page_title="Site Measure Pro", layout="centered")
 
-# This helps us see if the connection is working
-try:
-    conn = st.connection("gsheets", type=GSheetsConnection)
-except Exception as e:
-    st.error("Connection configuration missing in Secrets.")
-    st.stop()
+# Establish Connection
+conn = st.connection("gsheets", type=GSheetsConnection)
 
 st.title("📐 Site Measurement Form")
 
@@ -31,7 +28,7 @@ with st.form("measurement_form", clear_on_submit=True):
         fireplace = st.radio("Fireplace?", ["No", "Yes"])
 
     st.subheader("Cabinet Details")
-    appliances = st.text_area("Appliance List")
+    appliances = st.text_area("Appliance List (A, B, C, D...)")
     style = st.text_input("Cabinet Style")
     color = st.text_input("Cabinet Color")
 
@@ -42,17 +39,28 @@ with st.form("measurement_form", clear_on_submit=True):
             st.error("Please enter Name and Address.")
         else:
             try:
+                # Read existing data from Sheet1
                 existing_data = conn.read(worksheet="Sheet1")
-                new_row = pd.DataFrame([{
+                
+                # Create new entry
+                new_data = pd.DataFrame([{
                     "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    "Customer Name": cust_name, "Address": address,
-                    "Ceiling Height": ceil_ht, "Run Length": run_len,
-                    "Room Dimensions": room_dims, "Fireplace": fireplace,
-                    "Appliances": appliances, "Style": style, "Color": color
+                    "Customer Name": cust_name,
+                    "Address": address,
+                    "Ceiling Height": ceil_ht,
+                    "Run Length": run_len,
+                    "Room Dimensions": room_dims,
+                    "Fireplace": fireplace,
+                    "Appliances": appliances,
+                    "Style": style,
+                    "Color": color
                 }])
-                updated_df = pd.concat([existing_data, new_row], ignore_index=True)
+                
+                # Combine and Update
+                updated_df = pd.concat([existing_data, new_data], ignore_index=True)
                 conn.update(worksheet="Sheet1", data=updated_df)
-                st.success(f"Project for {cust_name} saved!")
+                
+                st.success(f"Project for {cust_name} successfully saved!")
                 st.balloons()
             except Exception as e:
                 st.error(f"Error: {e}")
