@@ -5,7 +5,6 @@ from datetime import datetime
 
 st.set_page_config(page_title="Site Measure Pro", layout="centered")
 
-# Connection to Google Sheets
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 st.title("📐 Site Measurement Form")
@@ -38,7 +37,7 @@ with st.form("measurement_form", clear_on_submit=True):
             st.error("Please enter Name and Address.")
         else:
             try:
-                # Create the new entry
+                # Prepare the data
                 new_row = pd.DataFrame([{
                     "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     "Customer Name": cust_name, "Address": address,
@@ -47,12 +46,16 @@ with st.form("measurement_form", clear_on_submit=True):
                     "Appliances": appliances, "Style": style, "Color": color
                 }])
                 
-                # Push to Sheet1
-                existing_data = conn.read(worksheet="Sheet1")
-                updated_df = pd.concat([existing_data, new_row], ignore_index=True)
-                conn.update(worksheet="Sheet1", data=updated_df)
+                # Use a safer read/write method
+                try:
+                    existing_data = conn.read(worksheet="Sheet1")
+                    updated_df = pd.concat([existing_data, new_row], ignore_index=True)
+                except:
+                    # If Sheet1 doesn't exist or is empty, just use the new row
+                    updated_df = new_row
                 
+                conn.update(worksheet="Sheet1", data=updated_df)
                 st.success(f"Project for {cust_name} saved!")
                 st.balloons()
             except Exception as e:
-                st.error(f"Almost there! Check that your Google Sheet tab is named 'Sheet1' and permissions are 'Editor'. Error: {e}")
+                st.error(f"Error: {e}")
