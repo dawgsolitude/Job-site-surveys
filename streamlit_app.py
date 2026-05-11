@@ -3,23 +3,24 @@ from st_gsheets_connection import GSheetsConnection
 import pandas as pd
 from datetime import datetime
 
-# Page config for a mobile-friendly look
 st.set_page_config(page_title="Site Measure Pro", layout="centered")
 
-# Establish Google Sheets Connection
-conn = st.connection("gsheets", type=GSheetsConnection)
+# This helps us see if the connection is working
+try:
+    conn = st.connection("gsheets", type=GSheetsConnection)
+except Exception as e:
+    st.error("Connection configuration missing in Secrets.")
+    st.stop()
 
 st.title("📐 Site Measurement Form")
 
 with st.form("measurement_form", clear_on_submit=True):
-    # Header: Customer Info
     st.subheader("Customer Details")
     cust_name = st.text_input("Customer Name")
     address = st.text_area("Site Address")
     
     st.divider()
     
-    # Measurements Section
     st.subheader("Room Specifications")
     col1, col2 = st.columns(2)
     with col1:
@@ -29,42 +30,29 @@ with st.form("measurement_form", clear_on_submit=True):
         room_dims = st.text_input("Overall Dimensions of Room")
         fireplace = st.radio("Fireplace?", ["No", "Yes"])
 
-    # Specifications
     st.subheader("Cabinet Details")
-    appliances = st.text_area("Appliance List (A, B, C, D...)")
+    appliances = st.text_area("Appliance List")
     style = st.text_input("Cabinet Style")
     color = st.text_input("Cabinet Color")
 
-    # The Submission Button
     submit_button = st.form_submit_button(label="Finalize & Save Project")
 
     if submit_button:
         if not cust_name or not address:
-            st.error("Please enter at least the Customer Name and Address.")
+            st.error("Please enter Name and Address.")
         else:
             try:
-                # 1. Read existing data
                 existing_data = conn.read(worksheet="Sheet1")
-                
-                # 2. Create a dataframe for the new entry
-                new_data = pd.DataFrame([{
+                new_row = pd.DataFrame([{
                     "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    "Customer Name": cust_name,
-                    "Address": address,
-                    "Ceiling Height": ceil_ht,
-                    "Run Length": run_len,
-                    "Room Dimensions": room_dims,
-                    "Fireplace": fireplace,
-                    "Appliances": appliances,
-                    "Style": style,
-                    "Color": color
+                    "Customer Name": cust_name, "Address": address,
+                    "Ceiling Height": ceil_ht, "Run Length": run_len,
+                    "Room Dimensions": room_dims, "Fireplace": fireplace,
+                    "Appliances": appliances, "Style": style, "Color": color
                 }])
-                
-                # 3. Combine and Update
-                updated_df = pd.concat([existing_data, new_data], ignore_index=True)
+                updated_df = pd.concat([existing_data, new_row], ignore_index=True)
                 conn.update(worksheet="Sheet1", data=updated_df)
-                
-                st.success(f"Project for {cust_name} successfully saved!")
+                st.success(f"Project for {cust_name} saved!")
                 st.balloons()
             except Exception as e:
-                st.error(f"Connection Error: Ensure your Google Sheet is set to 'Anyone with link can EDIT' and the tab is named 'Sheet1'. Details: {e}")
+                st.error(f"Error: {e}")
